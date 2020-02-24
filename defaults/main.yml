@@ -1,1 +1,5 @@
 ---
+# set to true to build ax88179_178a usbnet driver (after kernel update)
+atolla: false
+atolla_url: https://bit.ly/2SROIk7  # shortened for yamllint
+atolla_download_dir: /data/DRIVERS
