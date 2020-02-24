@@ -6,11 +6,11 @@
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform |
     jq -r -M '.current_version')/terraform_
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform |
-    jq -r -M '.current_version')_linux_amd64.zip"
+    jq -r -M '.current_version')_linux_amd64.zip" | sed "s/ //g"
   register: terraform_url
   changed_when: false
 
-- name: updating terraform
+- name: update terraform
   unarchive:
     src: "{{ terraform_url.stdout }}"
     dest: /usr/local/bin
@@ -24,11 +24,11 @@
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/vagrant |
     jq -r -M '.current_version')/vagrant_
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/vagrant |
-    jq -r -M '.current_version')_x86_64.deb"
+    jq -r -M '.current_version')_x86_64.deb" | sed "s/ //g"
   register: vagrant_url
   changed_when: false
 
-- name: update vagrant .deb
+- name: update vagrant
   apt:
     deb: "{{ vagrant_url.stdout }}"
   when: vagrant_url.stdout is defined

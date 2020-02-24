@@ -1,4 +1,9 @@
 ---
-- hosts: all
+- name: invoke sys_maintenance role
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars:
+    atolla: true
   roles:
-    - sys-maintenance
+    - { role: '../ansible-role-sys-maintenance' }
