@@ -1,0 +1,122 @@
+---
+# tasks file for sys-maintenance
+- name: parse tf url
+  shell: echo "https://releases.hashicorp.com/terraform/$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r -M '.current_version')/terraform_$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r -M '.current_version')_linux_amd64.zip"
+  register: terraform_url
+
+- name: updating terraform
+  unarchive:
+    src: "{{ terraform_url.stdout }}"
+    dest: /usr/local/bin
+    remote_src: true
+    mode: 0755
+  when: terraform_url.stdout is defined
+
+- name: parse vagrant deb url
+  shell: echo "https://releases.hashicorp.com/vagrant/$(curl -s https://checkpoint-api.hashicorp.com/v1/check/vagrant | jq -r -M '.current_version')/vagrant_$(curl -s https://checkpoint-api.hashicorp.com/v1/check/vagrant | jq -r -M '.current_version')_x86_64.deb"
+  register: vagrant_url
+
+- name: update vagrant .deb
+  apt:
+    deb: "{{ vagrant_url.stdout }}"
+  when: vagrant_url.stdout is defined
+
+- name: upgrade pip2
+  shell: "pip2 install --upgrade pip"
+  register: pip2
+  changed_when: "'Requirement already up-to-date' in pip2.stdout"
+
+- name: upgrade pip3
+  shell: "pip install --upgrade pip"
+  register: pip3
+  changed_when: "'Requirement already up-to-date' in pip3.stdout"
+
+- name: upgrade bundler
+  shell: "gem install bundler"
+  register: bundler
+  changed_when: "'gem installed' in bundler.stdout"
+
+- name: upgrade ansible
+  shell: "pip install --user --upgrade ansible"
+  register: ansible
+  become: false
+  changed_when: "'Requirement already up-to-date: ansible' not in ansible.stdout"
+
+#
+# VirtualBox
+#
+- name: check if virtualbox is running
+  command: pgrep VBoxSVC
+  failed_when: vboxsvcdown.stderr != ""
+  register: vboxsvcdown
+  changed_when: false
+
+- block:
+    - name: reinstall virtualbox-dkms
+      apt:
+        name: virtualbox-dkms
+        state: "{{ item }}"
+      with_items:
+        - absent
+        - present
+
+    - name: update dkms using /sbin/vboxconfig
+      shell: /sbin/vboxconfig
+
+    # Download and install virtualbox extension pack.for current virtualbox version. when: false. Gow to automate the license dialog?
+    # Reference: https://unix.stackexchange.com/questions/289685/how-to-install-virtualbox-extension-pack-to-virtualbox-latest-version-on-linux?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+    - name: lookup latest virtualbox version
+      debug:
+        msg: "{{ lookup('url', 'http://download.virtualbox.org/virtualbox/LATEST.TXT') }}"
+      register: LatestVirtualBoxVersion
+      when: false
+
+    - name: download vbox extension pack
+      get_url:
+        url: "http://download.virtualbox.org/virtualbox/{{ LatestVirtualBoxVersion.msg }}/Oracle_VM_VirtualBox_Extension_Pack-{{ LatestVirtualBoxVersion.msg }}.vbox-extpack"
+        dest: /tmp
+        mode: 755
+      when: false
+
+    - name: install VBox extpack
+      shell: "yes | VBoxManage extpack install --replace /tmp/Oracle_VM_VirtualBox_Extension_Pack-{{ LatestVirtualBoxVersion.msg }}.vbox-extpack"
+      register: extpack
+      changed_when: "'Successfully installed' in extpack.stdout"
+      when: false
+
+  # conditional for block
+  when: vboxsvcdown.rc == 1
+
+- name: purge old kernels
+  shell: yes | purge-old-kernels
+  register: purge_kernels
+  changed_when: "'No kernels are eligible for removal' not in purge_kernels.stdout"
+
+- name: check if usbnet kernel module for atolla eth0 is loaded
+  modprobe:
+    name: usbnet
+  register: usbnet
+
+- name: build atolla eth0 driver for this kernel
+  block:
+    - unarchive:
+        src: http://www.asix.com.tw/FrootAttach/driver/AX88179_178A_LINUX_DRIVER_v1.18.0_SOURCE.tar.bz2
+        dest: /data/DRIVERS
+        remote_src: true
+        mode: 0755
+      register: destdir
+    - shell: "cd {{ destdir.dest }}/AX88179_178A_LINUX_DRIVER_* && echo $PWD && make && make install && modprobe usbnet && insmod ax88179_178a.ko"
+  when: usbnet.state != "present"
+
+- name: update Postman
+  unarchive:
+    src: https://dl.pstmn.io/download/latest/linux64
+    dest: /opt
+    remote_src: true
+    mode: 0755
+
+- name: update keyring
+  command: apt-key net-update
+  register: net_update
+  failed_when: net_update.rc != 1
+  changed_when: false
