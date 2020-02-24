@@ -34,22 +34,22 @@
   when: vagrant_url.stdout is defined
 
 - name: upgrade pip2
-  shell: "pip2 install --upgrade pip"
+  command: "pip2 install --upgrade pip"
   register: pip2
   changed_when: "'Requirement already up-to-date' in pip2.stdout"
 
 - name: upgrade pip3
-  shell: "pip install --upgrade pip"
+  command: "pip install --upgrade pip"
   register: pip3
   changed_when: "'Requirement already up-to-date' in pip3.stdout"
 
 - name: upgrade bundler
-  shell: "gem install bundler"
+  command: "gem install bundler"
   register: bundler
   changed_when: "'gem installed' in bundler.stdout"
 
 - name: upgrade ansible
-  shell: "pip install --user --upgrade ansible"
+  command: "pip install --user --upgrade ansible"
   register: ans
   become: false
   changed_when: "'Requirement already up-to-date: ansible' not in ans.stdout"
@@ -59,26 +59,30 @@
   register: purge_k
   changed_when: "'No kernels are eligible for removal' not in purge_k.stdout"
 
-- block:
+- name: atolla ethernet driver
+  block:
     - name: check if usbnet kernel module for atolla eth0 is loaded
       modprobe:
         name: usbnet
       register: usbnet
 
-    - name: build atolla eth0 driver for this kernel
+    - name: build atolla ethernet driver for this kernel
       block:
-        - unarchive:
+        - name: get and unzip atolla driver
+          unarchive:
             src: "{{ atolla_url }}"
             dest: "{{ atolla_download_dir }}"
             remote_src: true
             mode: 0755
           register: destdir
-        - shell: >
+        - name: insmod driver
+          shell: >
             "cd {{ destdir.dest }}/AX88179_178A_LINUX_DRIVER_* &&
             echo $PWD && make && make install &&
             modprobe usbnet && insmod ax88179_178a.ko"
+          changed_when: false
       when: usbnet.state != "present"
-  when: atolla
+  when: atolla|bool
 
 - name: update Postman
   unarchive:

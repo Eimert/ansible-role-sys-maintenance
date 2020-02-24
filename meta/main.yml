@@ -13,10 +13,9 @@ galaxy_info:
         - all
 
   galaxy_tags:
-    - sys-maintenance
-    - system-maintenance
-    - system-automation
+    - maintenance
     - automation
+    - update
     - debian
     - mint
     - apt
