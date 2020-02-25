@@ -6,4 +6,4 @@
   vars:
     atolla: true
   roles:
-    - { role: '../ansible-role-sys-maintenance' }
+    - {role: '../ansible-role-sys-maintenance'}
