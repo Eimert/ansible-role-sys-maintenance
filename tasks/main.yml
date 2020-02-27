@@ -2,6 +2,7 @@
 # tasks file for sys-maintenance
 - name: set terraform url
   shell: >
+    set -o pipefail
     echo "https://releases.hashicorp.com/terraform/
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform |
     jq -r -M '.current_version')/terraform_
@@ -20,6 +21,7 @@
 
 - name: set vagrant url
   shell: >
+    set -o pipefail
     echo "https://releases.hashicorp.com/vagrant/
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/vagrant |
     jq -r -M '.current_version')/vagrant_
@@ -55,7 +57,9 @@
   changed_when: "'Requirement already up-to-date: ansible' not in ans.stdout"
 
 - name: purge old kernels
-  shell: yes | purge-old-kernels
+  shell: >
+    set -o pipefail
+    yes | purge-old-kernels
   register: purge_k
   changed_when: "'No kernels are eligible for removal' not in purge_k.stdout"
 
