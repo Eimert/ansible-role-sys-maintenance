@@ -2,7 +2,7 @@
 # tasks file for sys-maintenance
 - name: set terraform url
   shell: >
-    set -o pipefail
+    set -o pipefail;
     echo "https://releases.hashicorp.com/terraform/
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform |
     jq -r -M '.current_version')/terraform_
@@ -10,6 +10,8 @@
     jq -r -M '.current_version')_linux_amd64.zip" | sed "s/ //g"
   register: terraform_url
   changed_when: false
+  args:
+    executable: /bin/bash
 
 - name: update terraform
   unarchive:
@@ -21,7 +23,7 @@
 
 - name: set vagrant url
   shell: >
-    set -o pipefail
+    set -o pipefail;
     echo "https://releases.hashicorp.com/vagrant/
     $(curl -s https://checkpoint-api.hashicorp.com/v1/check/vagrant |
     jq -r -M '.current_version')/vagrant_
@@ -29,6 +31,8 @@
     jq -r -M '.current_version')_x86_64.deb" | sed "s/ //g"
   register: vagrant_url
   changed_when: false
+  args:
+    executable: /bin/bash
 
 - name: update vagrant
   apt:
@@ -58,10 +62,12 @@
 
 - name: purge old kernels
   shell: >
-    set -o pipefail
+    set -o pipefail;
     yes | purge-old-kernels
   register: purge_k
   changed_when: "'No kernels are eligible for removal' not in purge_k.stdout"
+  args:
+    executable: /bin/bash
 
 - name: atolla ethernet driver
   block:
