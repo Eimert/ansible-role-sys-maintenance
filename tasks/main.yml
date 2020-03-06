@@ -61,13 +61,9 @@
   changed_when: "'Requirement already up-to-date: ansible' not in ans.stdout"
 
 - name: purge old kernels
-  shell: >
-    set -o pipefail;
-    yes | purge-old-kernels
+  shell: purge-old-kernels -qy
   register: purge_k
   changed_when: "'No kernels are eligible for removal' not in purge_k.stdout"
-  args:
-    executable: /bin/bash
 
 - name: atolla ethernet driver
   block:
