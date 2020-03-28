@@ -60,10 +60,10 @@
   become: false
   changed_when: "'Requirement already up-to-date: ansible' not in ans.stdout"
 
-- name: purge old kernels
-  shell: purge-old-kernels -qy
-  register: purge_k
-  changed_when: "'No kernels are eligible for removal' not in purge_k.stdout"
+- name: remove dependencies that are no longer required
+  apt:
+    purge: yes
+    autoremove: yes
 
 - name: atolla ethernet driver
   block:
