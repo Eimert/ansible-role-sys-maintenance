@@ -102,3 +102,15 @@
   register: net_update
   failed_when: net_update.rc != 1
   changed_when: false
+
+- name: snap refresh
+  command: snap refresh
+  register: snap
+  changed_when: "'All snaps up to date.' not in snap.stderr"
+
+- name: update npm to latest
+  npm:
+    name: npm
+    state: latest
+    global: true
+  become: false
