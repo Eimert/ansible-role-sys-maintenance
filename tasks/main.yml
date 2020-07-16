@@ -60,6 +60,12 @@
   become: false
   changed_when: "'Requirement already up-to-date: ansible' not in ans.stdout"
 
+- name: upgrade npm package globally.
+  npm:
+    name: npm
+    state: latest
+    global: yes
+
 - name: remove dependencies that are no longer required
   apt:
     purge: yes
